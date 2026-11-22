@@ -4,7 +4,7 @@
 static const struct {
     uint32_t bg, panel, row, row_sel, accent, text, dim;
 } k_themes[THEME_COUNT] = {
-    /* Dark      */ { 0x0b0f1a, 0x141b2d, 0x1a2338, 0x24457a, 0x4da3ff, 0xe8edf5, 0x8794ad },
+    /* Aviation  */ { 0x07121f, 0x0e2031, 0x102438, 0x173c50, 0x43d9e6, 0xdeedf7, 0x8da9bb },
     /* Light     */ { 0xf1f4f9, 0xffffff, 0xe3e9f2, 0xb9d3f5, 0x1f6fd6, 0x18202e, 0x5c6a84 },
     /* Black     */ { 0x000000, 0x0c0c10, 0x17171d, 0x1f3a66, 0x4da3ff, 0xededed, 0x8a8a94 },
     /* Nord      */ { 0x2e3440, 0x3b4252, 0x434c5e, 0x5e81ac, 0x88c0d0, 0xeceff4, 0x9aa5b8 },
@@ -37,7 +37,7 @@ const app_theme_t *app_theme(void)
 
 const char *theme_names_option_string(void)
 {
-    return "Dark\nLight\nBlack\nNord\nSolarized\nPurple\nForest";
+    return "Aviation\nLight\nBlack\nNord\nSolarized\nPurple\nForest";
 }
 
 lv_color_t alt_color(int alt_ft, bool on_ground)

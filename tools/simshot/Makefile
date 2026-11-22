@@ -22,6 +22,7 @@ CORE_EXCLUDE := main.c lvgl_port.c waveshare_rgb_lcd_port.c tab5_lcd_port.c wifi
                 mqtt_pub.c settings.c http_util.c
 CORE_SRC := $(filter-out $(addprefix $(ESPF)/main/, $(CORE_EXCLUDE)), \
                          $(wildcard $(ESPF)/main/*.c))
+CORE_SRC += $(wildcard $(ESPF)/main/fonts/*.c)
 
 PLAT_EXCLUDE := main.c sdl_port.c http_curl.c http_client_curl.c android_glue.c
 PLAT_SRC := $(filter-out $(addprefix $(APK)/platform/, $(PLAT_EXCLUDE)), \

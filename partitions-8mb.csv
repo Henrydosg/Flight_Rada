@@ -1,8 +1,10 @@
-# 8 MB flash variant (ESP32-S3-WROOM-1 N8R8, e.g. Waveshare 4.3).
+# Local LCD-7 N8R8: retain the reference Satellite Tracker NVS boundary
+# (0x9000 + 0x5000). Do not reinterpret its old OTA sector as an NVS page.
+# 0xe000..0xefff is intentionally unused. App/assets sizes are unchanged.
 # Same layout idea as the 16 MB table: two OTA slots + spiffs assets,
 # app slots trimmed to 2.25 MB and a curated asset set.
 # Name,   Type, SubType, Offset,   Size
-nvs,      data, nvs,     0x9000,   0x6000
+nvs,      data, nvs,     0x9000,   0x5000
 phy_init, data, phy,     0xf000,   0x1000
 otadata,  data, ota,     0x10000,  0x2000
 ota_0,    app,  ota_0,   0x20000,  0x240000

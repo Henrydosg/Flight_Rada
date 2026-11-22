@@ -58,6 +58,7 @@ CORE_EXCLUDE := main.c lvgl_port.c waveshare_rgb_lcd_port.c tab5_lcd_port.c jc10
 LVGL_SRC := $(shell find $(LVGL)/src -name '*.c')
 CORE_SRC := $(filter-out $(addprefix $(ESPF)/main/, $(CORE_EXCLUDE)), \
                          $(wildcard $(ESPF)/main/*.c))
+CORE_SRC += $(wildcard $(ESPF)/main/fonts/*.c)
 PLAT_SRC := $(wildcard $(APK_ROOT)/platform/*.c) $(APK_ROOT)/vendor/cJSON.c
 
 LOCAL_SRC_FILES := $(LVGL_SRC) $(CORE_SRC) $(PLAT_SRC)

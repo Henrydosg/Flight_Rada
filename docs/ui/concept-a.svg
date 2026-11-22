@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="480" viewBox="0 0 800 480">
+<rect x="0" y="0" width="800" height="48" rx="0" fill="#0e2031"/>
+<text x="16" y="27" font-family="Arial,sans-serif" font-size="19" fill="#43d9e6">A / MODERN AVIATION RADAR</text>
+<text x="16" y="40" font-family="Consolas,sans-serif" font-size="10" fill="#8da9bb">800 x 480  /  DESIGN STUDY</text>
+<text x="442" y="27" font-family="Consolas,sans-serif" font-size="13" fill="#8da9bb">SNAPSHOT  /  7 AIRCRAFT</text>
+<rect x="684" y="2" width="44" height="44" rx="8" fill="#173149"/>
+<text x="691" y="25" font-family="Arial,sans-serif" font-size="11" fill="#deedf7">VIEW</text>
+<rect x="744" y="2" width="44" height="44" rx="8" fill="#173149"/>
+<text x="754" y="25" font-family="Arial,sans-serif" font-size="11" fill="#deedf7">SET</text>
+<circle cx="290" cy="248" r="53.666666666666664" fill="none" stroke="#224256"/>
+<circle cx="290" cy="248" r="107.33333333333333" fill="none" stroke="#224256"/>
+<circle cx="290" cy="248" r="161.0" fill="none" stroke="#224256"/>
+<path d="M129,248 L451,248" stroke="#224256" stroke-width="1" fill="none"/>
+<path d="M290,87 L290,409" stroke="#224256" stroke-width="1" fill="none"/>
+<text x="285" y="79" font-family="Consolas,sans-serif" font-size="14" fill="#43d9e6">N</text>
+<rect x="287" y="245" width="6" height="6" rx="3" fill="#43d9e6"/>
+<path d="M296.9879692122565,233.30598079999976 L281.08856921081383,239.32337887509215" stroke="#43d9e6" stroke-width="2" fill="none"/>
+<circle cx="296.9879692122565" cy="233.30598079999976" r="3" fill="none" stroke="#43d9e6"/>
+<path d="M329.7006005554408,229.4386963999999 L313.4486335229788,234.4260371318697" stroke="#43d9e6" stroke-width="2" fill="none"/>
+<circle cx="329.7006005554408" cy="229.4386963999999" r="3" fill="none" stroke="#43d9e6"/>
+<path d="M333.5583224438226,263.60940079999983 L350.5377358638007,262.7730277292553" stroke="#43d9e6" stroke-width="2" fill="none"/>
+<circle cx="333.5583224438226" cy="263.60940079999983" r="3" fill="none" stroke="#43d9e6"/>
+<path d="M285.35786580399633,199.45502239999973 L296.4951860982928,186.61134315056918" stroke="#43d9e6" stroke-width="2" fill="none"/>
+<circle cx="285.35786580399633" cy="199.45502239999973" r="3" fill="none" stroke="#43d9e6"/>
+<path d="M313.82161296361306,304.25636239999983 L329.5970416729482,310.59164842643025" stroke="#43d9e6" stroke-width="2" fill="none"/>
+<circle cx="313.82161296361306" cy="304.25636239999983" r="3" fill="none" stroke="#43d9e6"/>
+<path d="M350.8954856367768,219.07100479999986 L335.61078788013174,226.51264537772255" stroke="#43d9e6" stroke-width="2" fill="none"/>
+<circle cx="350.8954856367768" cy="219.07100479999986" r="3" fill="none" stroke="#43d9e6"/>
+<path d="M341.1230709938166,112.40103440000007 L351.83765052266034,99.20263353019455" stroke="#43d9e6" stroke-width="2" fill="none"/>
+<circle cx="341.1230709938166" cy="112.40103440000007" r="3" fill="none" stroke="#43d9e6"/>
+<text x="129" y="434" font-family="Consolas,sans-serif" font-size="12" fill="#8da9bb">HCMC  /  50 NM  /  NORTH UP</text>
+<rect x="574" y="68" width="208" height="358" rx="12" fill="#0e2031"/>
+<text x="590" y="116" font-family="Consolas,sans-serif" font-size="24" fill="#43d9e6">VJC227</text>
+<text x="590" y="141" font-family="Arial,sans-serif" font-size="14" fill="#deedf7">A321</text>
+<text x="590" y="182" font-family="Consolas,sans-serif" font-size="22" fill="#deedf7">1450 FT</text>
+<text x="590" y="214" font-family="Consolas,sans-serif" font-size="22" fill="#deedf7">158.2 KT</text>
+<text x="590" y="349" font-family="Arial,sans-serif" font-size="11" fill="#8da9bb">REAL API SNAPSHOT</text>
+<text x="590" y="371" font-family="Arial,sans-serif" font-size="11" fill="#8da9bb">NO LIVE CONNECTION</text>
+</svg>

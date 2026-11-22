@@ -116,6 +116,15 @@ menu "Example Configuration"
     endmenu
 
     menu "CanFlight"
+        config CANFLIGHT_WAVESHARE7_KNOWN_GOOD
+            bool "Local LCD-7 N8R8 verified hardware configuration"
+            depends on CANFLIGHT_BOARD_WAVESHARE_7
+            default n
+            help
+                Uses the user's working Satellite Tracker hardware parameters:
+                14 MHz PCLK, 43/12 back porches, CH422G EXIO6/2/1 only.
+                This is the original LCD-7, not the 1024x600 7B or boxed 7C.
+
         choice CANFLIGHT_BOARD
             prompt "Display board"
             default CANFLIGHT_BOARD_AUTO

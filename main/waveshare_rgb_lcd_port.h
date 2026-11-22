@@ -75,7 +75,8 @@ esp_err_t waveshare_rgb_lcd_bl_off(void);
 bool waveshare_rgb_lcd_bl_dimmable(void);
 esp_err_t waveshare_rgb_lcd_bl_pct(int pct);
 
-/* First RGB frame buffer (800x480 RGB565 in PSRAM), NULL before init. */
+/* RGB565 in PSRAM, NULL before init. Local 180-degree profile returns the
+ * logical LVGL buffer for screenshots; other profiles use the first RGB fb. */
 void *waveshare_lcd_get_fb(void);
 
 /* Framebuffer dimensions (fixed 800x480 on the panel; the app build may

@@ -21,6 +21,22 @@ static lv_color_t *s_buf1;
 static lv_color_t *s_fb;
 
 static uint32_t s_tick_ms;
+static lv_point_t s_pointer;
+static bool s_pointer_pressed;
+
+static void pointer_read(lv_indev_drv_t *drv, lv_indev_data_t *data)
+{
+    (void)drv;
+    data->point = s_pointer;
+    data->state = s_pointer_pressed ? LV_INDEV_STATE_PRESSED : LV_INDEV_STATE_RELEASED;
+}
+
+void sim_pointer_set(int x, int y, bool pressed)
+{
+    s_pointer.x = x;
+    s_pointer.y = y;
+    s_pointer_pressed = pressed;
+}
 
 uint32_t sim_tick_ms(void)
 {
@@ -87,6 +103,11 @@ int app_port_init(const char *title)
     disp_drv.flush_cb = flush_cb;
     disp_drv.draw_buf = &s_draw_buf;
     lv_disp_drv_register(&disp_drv);
+    static lv_indev_drv_t pointer;
+    lv_indev_drv_init(&pointer);
+    pointer.type = LV_INDEV_TYPE_POINTER;
+    pointer.read_cb = pointer_read;
+    lv_indev_drv_register(&pointer);
     return 0;
 }
 

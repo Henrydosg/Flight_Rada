@@ -1,47 +1,19 @@
-<h1 align="center">esp32flight</h1>
+# Flight_Rada
 
-<p align="center">
-  A standalone desk flight radar on a single ESP32 board with a touchscreen,<br>
-  also available as an Android app built from the same code.<br>
-  Live aircraft around you: airline logos, routes, maps, alerts and a built-in web panel.<br>
-  No Raspberry Pi, no server, no subscriptions, no API keys.
-</p>
+Flight_Rada là bản port radar máy bay để bàn cho **Waveshare ESP32-S3-Touch-LCD-7** với LCD 800×480, Flash **8 MB** và PSRAM OPI **8 MB**. Dự án gốc **esp32flight** do **Łukasz Nowak (@theqkash)** và các cộng tác viên phát triển theo MIT. [Mã nguồn gốc](https://github.com/theqkash/esp32flight) · [MIT](LICENSE) · [Nguồn và giấy phép bên thứ ba](ATTRIBUTIONS.md)
 
-<p align="center">
-  <a href="https://discord.gg/CwH8XKRnpz"><img src="https://img.shields.io/badge/Discord-join%20the%20esp32flight%20community-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Join the esp32flight Discord"></a>
-  <a href="https://ko-fi.com/theqkash"><img src="https://img.shields.io/badge/Ko--fi-support%20the%20project-ff5e5b?style=for-the-badge&logo=kofi&logoColor=white" alt="Support esp32flight on Ko-fi"></a>
-</p>
+Henrydosg duy trì profile LCD-7 8 MB, kiểm tra image và phân vùng sau build, giao diện LVGL và màn hình nhập tọa độ. Mốc mã nguồn ban đầu là [b62a100](https://github.com/theqkash/esp32flight/commit/b62a100a4ec967b296a0426ac895b3e7aa5ffd31).
 
-<p align="center">
-  <a href="https://theqkash.github.io/esp32flight/"><img src="https://img.shields.io/badge/flash-from%20your%20browser-4da3ff?style=flat-square" alt="browser flasher"></a>
-  <a href="https://github.com/theqkash/esp32flight/releases"><img src="https://badgen.net/github/release/theqkash/esp32flight?color=2ea44f" alt="latest release"></a>
-  <a href="https://github.com/theqkash/esp32flight/releases/latest"><img src="https://img.shields.io/badge/android-apk%20download-3ddc84?style=flat-square&logo=android&logoColor=white" alt="Android APK"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="MIT"></a>
-  <a href="https://ko-fi.com/theqkash"><img src="https://img.shields.io/badge/ko--fi-support%20the%20project-ff5e5b?style=flat-square&logo=kofi&logoColor=white" alt="Ko-fi"></a>
-</p>
+![Flight_Rada hiển thị bản ghi ADS-B](docs/ui/firmware-snapshot_view2.png)
 
----
+Ảnh dùng bản ghi ADS-B để minh họa. Dữ liệu từ [adsb.lol](https://www.adsb.lol/docs/open-data/api) theo [ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/).
 
-> [!NOTE]
-> **FlightAware users:** firmware before 0.4.7 could burn through AeroAPI credits very quickly (#37). 0.4.7 puts every FlightAware call under a monthly budget you set (900 by default, inside the free Personal credit), shows the calls and an estimated cost in the web panel and Home Assistant, and only looks up the flight you are watching. Update before you put a key back in.
+1. Xác nhận board LCD-7 và Flash 8 MB. Xem [đối chiếu phần cứng](docs/KNOWN_GOOD_HARDWARE.md).
+2. Chuẩn bị ESP-IDF 5.5.2 và assets, rồi dùng task build của VS Code hoặc script PowerShell. Xem [hướng dẫn build Windows](docs/BUILD_WINDOWS.md).
+3. Sao lưu Flash trước khi chuyển từ firmware khác. Profile này dùng bộ image **-w7-8mb-local** riêng. Xem [hướng dẫn nạp và khôi phục](docs/DEPLOYMENT_WINDOWS.md).
+4. Chọn Wi-Fi 2,4 GHz trong **Settings → Network** và nhập tọa độ ở **Settings → Location**.
 
-
-| | |
-|---|---|
-| ![flight details](docs/detail.png) | ![forest theme](docs/detail-forest.png) |
-| ![radar view](docs/radar.png) | ![retro radar with rain](docs/retro.png) |
-| ![ambient mode with rain radar](docs/ambient-mode.png) | ![route map](docs/route-map.png) |
-| ![aircraft photo](docs/photo.png) | ![web panel](docs/web-panel.png) |
-
-## Quick start
-
-1. Get one of the [ten supported boards](#hardware) - from the $15 Guition JC8048W550 to the original **Waveshare ESP32-S3-Touch-LCD-7** (about $35) - and a USB cable.
-2. Open **[the browser installer](https://theqkash.github.io/esp32flight/)** in Chrome or Edge, click the button for your board, pick the serial port. The Waveshare 800x480 family and the Guition even share one auto-detecting binary.
-3. Tap the gear icon, pick your 2.4 GHz Wi-Fi from the scan list, save. The device locates itself by IP (or type any city) and starts tracking.
-
-Later updates install over the air from the web panel. The cable is only ever needed once.
-
-No board at hand? The same radar also ships as an [Android app](#android-app).
+Các mục dưới đây mô tả tính năng được kế thừa từ esp32flight. Danh sách board, bộ cài web và APK upstream áp dụng cho repo gốc.
 
 ## What it does
 
@@ -189,7 +161,7 @@ With a panel password set, every endpoint requires Basic Auth: `curl -u admin:PA
 | Airline logos | [sexym0nk3y/airline-logos](https://github.com/sexym0nk3y/airline-logos), [Jxck-S/airline-logos](https://github.com/Jxck-S/airline-logos), served on demand from [esp32flight-logos](https://github.com/theqkash/esp32flight-logos) |
 | Country flags | [flagcdn.com](https://flagpedia.net) (bundled) |
 | Airports + runways | [OurAirports](https://ourairports.com) (bundled, public domain) |
-| Offline world map | NASA Blue Marble |
+| Offline world map | Natural Earth 1:110m land polygons in this local 8 MB bundle (upstream uses NASA Blue Marble) |
 
 Optional, with your own key: [FlightAware AeroAPI](https://www.flightaware.com/commercial/aeroapi/) for commercial flight numbers and live routes, billed per call by FlightAware and kept under the monthly budget described above.
 
@@ -211,26 +183,9 @@ Fourteen supported configurations, all running the same code. The Waveshare 800x
 - **Guition JC8012P4A1** (10.1", 800x1280, ESP32-P4, ~$40): the biggest screen of the fleet, Wi-Fi over its ESP32-C6, clean-room GSL3680 touch driver. Panel revision V1 hardware-confirmed; V2 (rear-case batch 2628+) has its own build awaiting a tester.
 - **Elecrow CrowPanel Advanced 10.1 ESP32-P4** (10.1", 1024x600): new in 0.4.7 on [the test-builds page](https://theqkash.github.io/esp32flight/beta.html), built from Elecrow's schematic and examples, awaiting its first hardware report (board revisions V1.1 and V1.2).
 
-## Building from source
+## Build and validation
 
-<details>
-<summary>ESP-IDF 5.5+, ImageMagick and Node required</summary>
-
-```sh
-# one-time: fetch airline logos, airports, flags + generate fonts
-./tools/fetch_logos.sh
-./tools/fetch_airports.sh
-./tools/fetch_flags.sh
-./tools/gen_fonts.sh
-
-idf.py set-target esp32s3
-idf.py -p /dev/cu.usbmodemXXXX -b 230400 flash
-```
-
-Subsequent updates can go over the air from the web panel (`build/esp32flight.bin`).
-
-The Android app builds from [`apkflight/`](apkflight/): `make` gives a desktop test build (SDL2 via Homebrew), `gradle assembleRelease` in `apkflight/android/` produces the APK. Native curl and mbedTLS are cross-compiled once with `apkflight/scripts/build_android_deps.sh`.
-</details>
+The [Windows build guide](docs/BUILD_WINDOWS.md) covers ESP-IDF 5.5.2, asset generation, 8 MB image validation and offline tests. See the [LVGL design notes](docs/UI_DESIGN.md) for screenshots and the host renderer. Android sources are inherited from upstream.
 
 ## Support the project
 

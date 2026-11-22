@@ -36,9 +36,26 @@ tools/simshot/*.png
 tools/simshot/simshot
 tools/simshot/apk_version.h
 assets-4mb/
+__pycache__/
+docs/ui/*.ppm
+output/
 stage-04*/
 sdkconfig.8mb
 sdkconfig.guition
 sdkconfig.sunton43
 sdkconfig.sunton43r
 logs-04*/
+
+# Local configuration, validation logs and device-specific records.
+.vscode/settings.json
+docs/IMPLEMENTATION_REPORT_VI.md
+docs/validation/*
+!docs/validation/adsb-lol-hcmc.json
+docs/ui/location-input*
+docs/ui/firmware-contact-sheet.png
+
+# Desktop runtime state.
+apkflight/assets/settings.bin
+apkflight/assets/alerts.tsv
+apkflight/assets/days.tsv
+apkflight/assets/obslog.tsv

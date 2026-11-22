@@ -9,6 +9,7 @@
 #include "esp_log.h"
 #include "nvs.h"
 #include "sdkconfig.h"
+#include "observer_config.h"
 
 static const char *TAG = "settings";
 static const char *NVS_NS = "canflight";
@@ -32,9 +33,10 @@ void settings_load(void)
 {
     strlcpy(s_settings.wifi_ssid, CONFIG_CANFLIGHT_WIFI_SSID, sizeof(s_settings.wifi_ssid));
     strlcpy(s_settings.wifi_pass, CONFIG_CANFLIGHT_WIFI_PASSWORD, sizeof(s_settings.wifi_pass));
-    s_settings.use_fixed_loc = false;
-    s_settings.lat = 0;
-    s_settings.lon = 0;
+    s_settings.use_fixed_loc = true;
+    s_settings.lat = OBSERVER_DEFAULT_LAT;
+    s_settings.lon = OBSERVER_DEFAULT_LON;
+    s_settings.fa_key[0] = '\0'; /* paid provider is opt-in, never a default */
     s_settings.radius_nm = CONFIG_CANFLIGHT_RADIUS_NM;
     s_settings.hide_ground = true;
     s_settings.hide_private = false;
@@ -104,12 +106,12 @@ void settings_load(void)
     char coord[24] = "";
     get_str(h, "lat", coord, sizeof(coord));
     if (coord[0]) {
-        s_settings.lat = atof(coord);
+        observer_parse_coordinate(coord, 90, &s_settings.lat);
     }
     coord[0] = '\0';
     get_str(h, "lon", coord, sizeof(coord));
     if (coord[0]) {
-        s_settings.lon = atof(coord);
+        observer_parse_coordinate(coord, 180, &s_settings.lon);
     }
 
     int32_t radius = 0;

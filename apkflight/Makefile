@@ -31,6 +31,7 @@ CORE_EXCLUDE := main.c lvgl_port.c waveshare_rgb_lcd_port.c tab5_lcd_port.c jc10
                 mqtt_pub.c settings.c http_util.c
 CORE_SRC := $(filter-out $(addprefix $(ESPF)/main/, $(CORE_EXCLUDE)), \
                          $(wildcard $(ESPF)/main/*.c))
+CORE_SRC += $(wildcard $(ESPF)/main/fonts/*.c)
 PLAT_SRC := $(wildcard platform/*.c) vendor/cJSON.c
 # apk_settings.c + others picked up by the wildcard above
 

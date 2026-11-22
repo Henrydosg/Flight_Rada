@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="480" viewBox="0 0 800 480">
+<rect x="0" y="0" width="800" height="48" rx="0" fill="#0e2031"/>
+<text x="16" y="27" font-family="Arial,sans-serif" font-size="19" fill="#43d9e6">FLIGHT RADAR / HCMC</text>
+<text x="16" y="40" font-family="Consolas,sans-serif" font-size="10" fill="#8da9bb">800 x 480  /  DESIGN STUDY</text>
+<text x="442" y="27" font-family="Consolas,sans-serif" font-size="13" fill="#8da9bb">SNAPSHOT  /  7 AIRCRAFT</text>
+<rect x="684" y="2" width="44" height="44" rx="8" fill="#173149"/>
+<text x="691" y="25" font-family="Arial,sans-serif" font-size="11" fill="#deedf7">VIEW</text>
+<rect x="744" y="2" width="44" height="44" rx="8" fill="#173149"/>
+<text x="754" y="25" font-family="Arial,sans-serif" font-size="11" fill="#deedf7">SET</text>
+<rect x="0" y="48" width="310" height="432" rx="0" fill="#0b1928"/>
+<rect x="8" y="54" width="55" height="44" rx="7" fill="#173149"/>
+<text x="13" y="79" font-family="Arial,sans-serif" font-size="10" fill="#deedf7">DETAIL</text>
+<rect x="67" y="54" width="55" height="44" rx="7" fill="#173149"/>
+<text x="72" y="79" font-family="Arial,sans-serif" font-size="10" fill="#deedf7">ROUTE</text>
+<rect x="126" y="54" width="55" height="44" rx="7" fill="#24616e"/>
+<text x="131" y="79" font-family="Arial,sans-serif" font-size="10" fill="#deedf7">RADAR</text>
+<rect x="185" y="54" width="55" height="44" rx="7" fill="#173149"/>
+<text x="190" y="79" font-family="Arial,sans-serif" font-size="10" fill="#deedf7">STATS</text>
+<rect x="244" y="54" width="55" height="44" rx="7" fill="#173149"/>
+<text x="249" y="79" font-family="Arial,sans-serif" font-size="10" fill="#deedf7">RETRO</text>
+<rect x="8" y="108" width="286" height="62" rx="9" fill="#173c50"/>
+<text x="20" y="135" font-family="Consolas,sans-serif" font-size="19" fill="#deedf7">VJC227</text>
+<text x="228" y="132" font-family="Consolas,sans-serif" font-size="12" fill="#43d9e6">A321</text>
+<text x="20" y="158" font-family="Consolas,sans-serif" font-size="13" fill="#8da9bb">1450 FT  /  158.2 KT</text>
+<rect x="8" y="176" width="286" height="62" rx="9" fill="#102438"/>
+<text x="20" y="203" font-family="Consolas,sans-serif" font-size="19" fill="#deedf7">JAL759</text>
+<text x="228" y="200" font-family="Consolas,sans-serif" font-size="12" fill="#43d9e6">B788</text>
+<text x="20" y="226" font-family="Consolas,sans-serif" font-size="13" fill="#8da9bb">3275 FT  /  184.1 KT</text>
+<rect x="8" y="244" width="286" height="62" rx="9" fill="#102438"/>
+<text x="20" y="271" font-family="Consolas,sans-serif" font-size="19" fill="#deedf7">VJC1892</text>
+<text x="228" y="268" font-family="Consolas,sans-serif" font-size="12" fill="#43d9e6">A320</text>
+<text x="20" y="294" font-family="Consolas,sans-serif" font-size="13" fill="#8da9bb">12750 FT  /  365.4 KT</text>
+<rect x="8" y="312" width="286" height="62" rx="9" fill="#102438"/>
+<text x="20" y="339" font-family="Consolas,sans-serif" font-size="19" fill="#deedf7">HVN148</text>
+<text x="228" y="336" font-family="Consolas,sans-serif" font-size="12" fill="#43d9e6">A321</text>
+<text x="20" y="362" font-family="Consolas,sans-serif" font-size="13" fill="#8da9bb">11350 FT  /  358.7 KT</text>
+<rect x="8" y="380" width="286" height="62" rx="9" fill="#102438"/>
+<text x="20" y="407" font-family="Consolas,sans-serif" font-size="19" fill="#deedf7">HVN608</text>
+<text x="228" y="404" font-family="Consolas,sans-serif" font-size="12" fill="#43d9e6">A21N</text>
+<text x="20" y="430" font-family="Consolas,sans-serif" font-size="13" fill="#8da9bb">7950 FT  /  273.7 KT</text>
+<circle cx="551" cy="234" r="49.666666666666664" fill="none" stroke="#224256"/>
+<circle cx="551" cy="234" r="99.33333333333333" fill="none" stroke="#224256"/>
+<circle cx="551" cy="234" r="149.0" fill="none" stroke="#224256"/>
+<path d="M402,234 L700,234" stroke="#224256" stroke-width="1" fill="none"/>
+<path d="M551,85 L551,383" stroke="#224256" stroke-width="1" fill="none"/>
+<text x="546" y="77" font-family="Consolas,sans-serif" font-size="14" fill="#43d9e6">N</text>
+<rect x="548" y="231" width="6" height="6" rx="3" fill="#43d9e6"/>
+<path d="M557.4671267864983,220.40118719999978 L541.5677267850556,226.41858527509217" stroke="#43d9e6" stroke-width="2" fill="none"/>
+<circle cx="557.4671267864983" cy="220.40118719999978" r="3" fill="none" stroke="#43d9e6"/>
+<path d="M587.7415495823644,216.8221475999999 L571.4895825499024,221.8094883318697" stroke="#43d9e6" stroke-width="2" fill="none"/>
+<circle cx="587.7415495823644" cy="216.8221475999999" r="3" fill="none" stroke="#43d9e6"/>
+<path d="M591.3117394045314,248.44596719999984 L608.2911528245095,247.6095941292553" stroke="#43d9e6" stroke-width="2" fill="none"/>
+<circle cx="591.3117394045314" cy="248.44596719999984" r="3" fill="none" stroke="#43d9e6"/>
+<path d="M546.7038633838226,189.07328159999975 L557.841183678119,176.2296023505692" stroke="#43d9e6" stroke-width="2" fill="none"/>
+<circle cx="546.7038633838226" cy="189.07328159999975" r="3" fill="none" stroke="#43d9e6"/>
+<path d="M573.0460890160145,286.06334159999983 L588.8215177253497,292.39862762643025" stroke="#43d9e6" stroke-width="2" fill="none"/>
+<circle cx="573.0460890160145" cy="286.06334159999983" r="3" fill="none" stroke="#43d9e6"/>
+<path d="M607.3566916762717,207.22720319999988 L592.0719939196266,214.66884377772257" stroke="#43d9e6" stroke-width="2" fill="none"/>
+<circle cx="607.3566916762717" cy="207.22720319999988" r="3" fill="none" stroke="#43d9e6"/>
+<path d="M598.3126557644638,108.50778960000007 L609.0272352933075,95.30938873019454" stroke="#43d9e6" stroke-width="2" fill="none"/>
+<circle cx="598.3126557644638" cy="108.50778960000007" r="3" fill="none" stroke="#43d9e6"/>
+<text x="402" y="408" font-family="Consolas,sans-serif" font-size="12" fill="#8da9bb">HCMC  /  50 NM  /  NORTH UP</text>
+<rect x="326" y="418" width="458" height="46" rx="9" fill="#0e2031"/>
+<text x="340" y="440" font-family="Consolas,sans-serif" font-size="13" fill="#43d9e6">REAL SNAPSHOT / ADSB.LOL</text>
+<text x="340" y="458" font-family="Arial,sans-serif" font-size="11" fill="#8da9bb">Design preview; firmware renders current data only</text>
+</svg>

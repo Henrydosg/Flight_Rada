@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="480" viewBox="0 0 800 480">
+<rect x="0" y="0" width="800" height="48" rx="0" fill="#0e2031"/>
+<text x="16" y="27" font-family="Arial,sans-serif" font-size="19" fill="#43d9e6">B / PROFESSIONAL ATC</text>
+<text x="16" y="40" font-family="Consolas,sans-serif" font-size="10" fill="#8da9bb">800 x 480  /  DESIGN STUDY</text>
+<text x="442" y="27" font-family="Consolas,sans-serif" font-size="13" fill="#8da9bb">SNAPSHOT  /  7 AIRCRAFT</text>
+<rect x="684" y="2" width="44" height="44" rx="8" fill="#173149"/>
+<text x="691" y="25" font-family="Arial,sans-serif" font-size="11" fill="#deedf7">VIEW</text>
+<rect x="744" y="2" width="44" height="44" rx="8" fill="#173149"/>
+<text x="754" y="25" font-family="Arial,sans-serif" font-size="11" fill="#deedf7">SET</text>
+<circle cx="397" cy="251" r="55.333333333333336" fill="none" stroke="#224256"/>
+<circle cx="397" cy="251" r="110.66666666666667" fill="none" stroke="#224256"/>
+<circle cx="397" cy="251" r="166.0" fill="none" stroke="#224256"/>
+<path d="M231,251 L563,251" stroke="#224256" stroke-width="1" fill="none"/>
+<path d="M397,85 L397,417" stroke="#224256" stroke-width="1" fill="none"/>
+<text x="392" y="77" font-family="Consolas,sans-serif" font-size="14" fill="#56e398">N</text>
+<rect x="394" y="248" width="6" height="6" rx="3" fill="#56e398"/>
+<path d="M404.20498688965574,235.84964479999977 L388.3055868882131,241.86704287509215" stroke="#56e398" stroke-width="2" fill="none"/>
+<circle cx="404.20498688965574" cy="235.84964479999977" r="3" fill="none" stroke="#56e398"/>
+<text x="412.20498688965574" y="240.84964479999977" font-family="Consolas,sans-serif" font-size="12" fill="#56e398">VJC227</text>
+<path d="M437.9335384608893,231.8622583999999 L421.6815714284273,236.84959913186967" stroke="#56e398" stroke-width="2" fill="none"/>
+<circle cx="437.9335384608893" cy="231.8622583999999" r="3" fill="none" stroke="#56e398"/>
+<text x="445.9335384608893" y="236.8622583999999" font-family="Consolas,sans-serif" font-size="12" fill="#56e398">JAL759</text>
+<path d="M441.91106537686056,267.0941647999998 L458.8904787968387,266.2577917292553" stroke="#56e398" stroke-width="2" fill="none"/>
+<circle cx="441.91106537686056" cy="267.0941647999998" r="3" fill="none" stroke="#56e398"/>
+<text x="449.91106537686056" y="272.0941647999998" font-family="Consolas,sans-serif" font-size="12" fill="#56e398">VJC1892</text>
+<path d="M392.21370014573534,200.94741439999973 L403.3510204400318,188.10373515056918" stroke="#56e398" stroke-width="2" fill="none"/>
+<circle cx="392.21370014573534" cy="200.94741439999973" r="3" fill="none" stroke="#56e398"/>
+<text x="400.21370014573534" y="205.94741439999973" font-family="Consolas,sans-serif" font-size="12" fill="#56e398">HVN148</text>
+<path d="M421.5614146084457,309.00345439999984 L437.33684331778085,315.33874042643026" stroke="#56e398" stroke-width="2" fill="none"/>
+<circle cx="421.5614146084457" cy="309.00345439999984" r="3" fill="none" stroke="#56e398"/>
+<text x="429.5614146084457" y="314.00345439999984" font-family="Consolas,sans-serif" font-size="12" fill="#56e398">HVN608</text>
+<path d="M459.78664978698725,221.17258879999986 L444.5019520303422,228.61422937772255" stroke="#56e398" stroke-width="2" fill="none"/>
+<circle cx="459.78664978698725" cy="221.17258879999986" r="3" fill="none" stroke="#56e398"/>
+<text x="467.78664978698725" y="226.17258879999986" font-family="Consolas,sans-serif" font-size="12" fill="#56e398">VAG1103</text>
+<path d="M449.7107440060469,111.18988640000006 L460.42532353489065,97.99148553019454" stroke="#56e398" stroke-width="2" fill="none"/>
+<circle cx="449.7107440060469" cy="111.18988640000006" r="3" fill="none" stroke="#56e398"/>
+<text x="457.7107440060469" y="116.18988640000006" font-family="Consolas,sans-serif" font-size="12" fill="#56e398">SPQ634</text>
+<text x="231" y="442" font-family="Consolas,sans-serif" font-size="12" fill="#8da9bb">HCMC  /  50 NM  /  NORTH UP</text>
+<text x="18" y="86" font-family="Consolas,sans-serif" font-size="16" fill="#56e398">SECTOR VVTS</text>
+<text x="18" y="109" font-family="Consolas,sans-serif" font-size="13" fill="#8da9bb">RANGE 50 NM</text>
+<text x="18" y="449" font-family="Consolas,sans-serif" font-size="11" fill="#8da9bb">SNAPSHOT ONLY / SOURCE: ADSB.LOL / NOT FOR NAVIGATION</text>
+</svg>

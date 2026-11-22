@@ -11,6 +11,8 @@
 #include "esp_ota_ops.h"
 #include "esp_app_format.h"
 #include "esp_app_desc.h"
+#include "ota_image_guard.h"
+
 #include "mbedtls/base64.h"
 #include "esp_timer.h"
 #include "esp_system.h"
@@ -1309,6 +1311,11 @@ static esp_err_t view_get(httpd_req_t *req)
 
 static esp_err_t ota_post(httpd_req_t *req)
 {
+    _Static_assert(sizeof(esp_image_header_t) == 24, "ESP image header ABI changed");
+    _Static_assert(sizeof(esp_image_segment_header_t) == 8, "ESP segment header ABI changed");
+    _Static_assert(offsetof(esp_app_desc_t, version) == 16, "ESP app version ABI changed");
+    _Static_assert(offsetof(esp_app_desc_t, project_name) == 48, "ESP app project ABI changed");
+    _Static_assert(sizeof(esp_app_desc_t) + 32 <= 4096, "OTA prefix exceeds receive buffer");
     AUTH_GUARD(req);
     if (esp_ota_get_next_update_partition(NULL) == NULL) {
         /* 4 MB flash class: one factory slot, nowhere to stage an update */
@@ -1329,47 +1336,47 @@ static esp_err_t ota_post(httpd_req_t *req)
     }
     ESP_LOGI(TAG, "OTA start: %d bytes -> %s", req->content_len, part->label);
 
+    const int prefix_len = sizeof(esp_image_header_t) + sizeof(esp_image_segment_header_t) + sizeof(esp_app_desc_t);
+    if (req->content_len < prefix_len || (size_t)req->content_len > part->size) {
+        return httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "invalid firmware length");
+    }
+    char *buf = malloc(4096);
+    if (buf == NULL) return httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "out of memory");
+    /* Accumulate the complete descriptor before beginning OTA. HTTP/TCP may
+     * split it into arbitrarily small reads; never interpret a later chunk
+     * as the beginning of the image or erase a slot before checking it. */
+    int received = 0;
+    while (received < prefix_len) {
+        int n = httpd_req_recv(req, buf + received, prefix_len - received);
+        if (n <= 0) {
+            free(buf);
+            return httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "header recv failed");
+        }
+        received += n;
+    }
+    const esp_app_desc_t *running = esp_app_get_description();
+    if (!w7_ota_image_compatible((const uint8_t *)buf, received, running->version, running->project_name)) {
+        free(buf);
+        return httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST,
+                                   "wrong image: ESP32-S3, 8MB and matching local board variant required");
+    }
     esp_ota_handle_t ota;
     if (esp_ota_begin(part, OTA_WITH_SEQUENTIAL_WRITES, &ota) != ESP_OK) {
+        free(buf);
         return httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "ota_begin failed");
     }
-
-    char *buf = malloc(4096);
-    int remaining = req->content_len;
-    bool checked = false;
+    if (esp_ota_write(ota, buf, received) != ESP_OK) {
+        free(buf);
+        esp_ota_abort(ota);
+        return httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "prefix write failed");
+    }
+    int remaining = req->content_len - received;
     while (remaining > 0) {
         int n = httpd_req_recv(req, buf, remaining < 4096 ? remaining : 4096);
         if (n <= 0) {
             free(buf);
             esp_ota_abort(ota);
             return httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "recv failed");
-        }
-        if (!checked && req->content_len - remaining + n > 512) {
-            /* the app descriptor sits early in the image; refuse a binary
-               built for a different board variant before writing further.
-               Variant = the part of the version after the first dash. */
-            checked = true;
-            const esp_app_desc_t *inc =
-                (const esp_app_desc_t *)(buf + sizeof(esp_image_header_t)
-                                             + sizeof(esp_image_segment_header_t));
-            if (inc->magic_word == ESP_APP_DESC_MAGIC_WORD) {
-                const char *run_v = esp_app_get_description()->version;
-                const char *inc_v = inc->version;
-                const char *rd = strchr(run_v, '-');
-                const char *id = strchr(inc_v, '-');
-                bool same = (rd == NULL && id == NULL) ||
-                            (rd != NULL && id != NULL && strcmp(rd, id) == 0);
-                if (!same) {
-                    char msg[160];
-                    snprintf(msg, sizeof(msg),
-                             "wrong build for this board: file is %s, device runs %s",
-                             inc_v, run_v);
-                    ESP_LOGW(TAG, "OTA rejected: %s", msg);
-                    free(buf);
-                    esp_ota_abort(ota);
-                    return httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, msg);
-                }
-            }
         }
         if (esp_ota_write(ota, buf, n) != ESP_OK) {
             free(buf);

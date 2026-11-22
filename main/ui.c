@@ -117,6 +117,10 @@ static int  s_selected = -1;
 static char s_selected_hex[ICAO_HEX_LEN];
 
 static lv_obj_t *s_status_label;
+static lv_obj_t *s_view_tabs;
+static lv_obj_t *s_list_empty;
+static lv_obj_t *s_radar_empty;
+static lv_obj_t *s_position_label;
 static lv_obj_t *s_weather_label;
 static lv_obj_t *s_list_panel;
 static lv_obj_t *s_list_rows[MAX_SHOWN];
@@ -364,6 +368,15 @@ static void label_set_if_changed(lv_obj_t *l, const char *txt);
 
 static void render_right(void)
 {
+    bool empty = s_shown_count == 0 && s_row_ship_count == 0;
+    if (s_list_empty != NULL) {
+        if (empty) lv_obj_clear_flag(s_list_empty, LV_OBJ_FLAG_HIDDEN);
+        else lv_obj_add_flag(s_list_empty, LV_OBJ_FLAG_HIDDEN);
+    }
+    if (s_radar_empty != NULL) {
+        if (empty) lv_obj_clear_flag(s_radar_empty, LV_OBJ_FLAG_HIDDEN);
+        else lv_obj_add_flag(s_radar_empty, LV_OBJ_FLAG_HIDDEN);
+    }
     switch (s_view_mode) {
     case VIEW_MAP:
         render_map_panel();
@@ -384,7 +397,7 @@ static void render_right(void)
 }
 
 /* Wall-clock time at the device's location: Open-Meteo home offset when
- * known, TZ env (Europe/Warsaw) otherwise */
+ * known, configured TZ env (HCMC by default) otherwise */
 static void home_localtime(time_t t, struct tm *tm)
 {
     if (tz_home_known()) {
@@ -652,6 +665,10 @@ static void apply_view(int mode)
 {
     int prev = s_view_mode;
     s_view_mode = mode % VIEW_COUNT;
+    if (s_view_tabs != NULL) {
+        lv_btnmatrix_clear_btn_ctrl_all(s_view_tabs, LV_BTNMATRIX_CTRL_CHECKED);
+        lv_btnmatrix_set_btn_ctrl(s_view_tabs, s_view_mode, LV_BTNMATRIX_CTRL_CHECKED);
+    }
     if (prev == VIEW_MAP && s_view_mode != VIEW_MAP) {
         emb_release();
     }
@@ -703,6 +720,12 @@ static void apply_view(int mode)
 static void mode_click_cb(lv_event_t *e)
 {
     apply_view(s_view_mode + 1);
+}
+
+static void view_tab_cb(lv_event_t *e)
+{
+    uint16_t view = lv_btnmatrix_get_selected_btn(lv_event_get_target(e));
+    if (view < VIEW_COUNT) apply_view(view);
 }
 
 void ui_set_list_mode(int mode)
@@ -835,16 +858,20 @@ static void build_header(lv_obj_t *scr)
     lv_obj_set_size(hdr, SCR_W, HEADER_H);
     lv_obj_set_pos(hdr, 0, 0);
 
-    s_weather_label = make_label(hdr, UIFONT(&font_pl_20, &font_pl_12), COL_ACCENT);
-    lv_obj_set_width(s_weather_label, UISX(340));
-    lv_label_set_long_mode(s_weather_label, LV_LABEL_LONG_DOT);
-    lv_label_set_text(s_weather_label, LV_SYMBOL_GPS " esp32flight");
-    lv_obj_align(s_weather_label, LV_ALIGN_LEFT_MID, UISX(14), 0);
+    lv_obj_t *brand = make_label(hdr, UIFONT(&ui_inter_18, &font_pl_12), COL_ACCENT);
+    lv_label_set_text(brand, "FLIGHT RADAR");
+    lv_obj_set_pos(brand, UISX(14), UISY(3));
 
-    s_clock_label = make_label(hdr, UIFONT(&font_pl_20, &font_pl_12), COL_TEXT);
+    s_weather_label = make_label(hdr, UIFONT(&font_pl_14, &font_pl_8), COL_DIM);
+    lv_obj_set_width(s_weather_label, UISX(260));
+    lv_label_set_long_mode(s_weather_label, LV_LABEL_LONG_DOT);
+    lv_label_set_text(s_weather_label, "ADS-B AIRCRAFT TRACKING");
+    lv_obj_align(s_weather_label, LV_ALIGN_BOTTOM_LEFT, UISX(14), -UISY(3));
+
+    s_clock_label = make_label(hdr, UIFONT(&ui_plex_20, &font_pl_12), COL_TEXT);
     /* dead center: offset +60 collided with the status label on busy
      * headers (#33, clock painted over the city name) */
-    lv_obj_align(s_clock_label, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_align(s_clock_label, LV_ALIGN_CENTER, -UISX(50), 0);
     lv_label_set_text(s_clock_label, "");
     /* tap the clock to start the screensaver right away */
     lv_obj_add_flag(s_clock_label, LV_OBJ_FLAG_CLICKABLE);
@@ -859,18 +886,22 @@ static void build_header(lv_obj_t *scr)
     lv_label_set_text(s_status_label, "...");
 
     lv_obj_t *gear = lv_btn_create(hdr);
-    lv_obj_set_size(gear, UISX(46), UISY(36));
+    lv_obj_set_size(gear, UISX(46), UISY(44));
     lv_obj_align(gear, LV_ALIGN_RIGHT_MID, -UISX(10), 0);
     lv_obj_set_style_bg_color(gear, COL_ROW, 0);
+    lv_obj_set_style_shadow_width(gear, 0, 0);
+    lv_obj_set_style_bg_grad_dir(gear, LV_GRAD_DIR_NONE, 0);
     lv_obj_add_event_cb(gear, settings_click_cb, LV_EVENT_CLICKED, NULL);
     s_gear_label = make_label(gear, UIFONT(&lv_font_montserrat_16, &lv_font_montserrat_10), COL_TEXT);
     lv_label_set_text(s_gear_label, LV_SYMBOL_SETTINGS);
     lv_obj_center(s_gear_label);
 
     lv_obj_t *mode = lv_btn_create(hdr);
-    lv_obj_set_size(mode, UISX(46), UISY(36));
+    lv_obj_set_size(mode, UISX(46), UISY(44));
     lv_obj_align(mode, LV_ALIGN_RIGHT_MID, -UISX(62), 0);
     lv_obj_set_style_bg_color(mode, COL_ROW, 0);
+    lv_obj_set_style_shadow_width(mode, 0, 0);
+    lv_obj_set_style_bg_grad_dir(mode, LV_GRAD_DIR_NONE, 0);
     lv_obj_add_event_cb(mode, mode_click_cb, LV_EVENT_CLICKED, NULL);
     s_mode_btn_label = make_label(mode, UIFONT(&lv_font_montserrat_16, &lv_font_montserrat_10), COL_TEXT);
     lv_label_set_text(s_mode_btn_label, LV_SYMBOL_LOOP);
@@ -888,6 +919,25 @@ static void build_list(lv_obj_t *scr)
     lv_obj_set_flex_flow(s_list_panel, LV_FLEX_FLOW_COLUMN);
     lv_obj_add_flag(s_list_panel, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_scroll_dir(s_list_panel, LV_DIR_VER);
+
+    static const char *views[] = { "DETAIL", "ROUTE", "RADAR", "STATS", "RETRO", "" };
+    s_view_tabs = lv_btnmatrix_create(s_list_panel);
+    lv_btnmatrix_set_map(s_view_tabs, views);
+    lv_btnmatrix_set_one_checked(s_view_tabs, true);
+    lv_btnmatrix_set_btn_ctrl_all(s_view_tabs, LV_BTNMATRIX_CTRL_CHECKABLE);
+    lv_obj_set_size(s_view_tabs, LIST_W - UISX(24), UISY(44));
+    lv_obj_set_style_bg_opa(s_view_tabs, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_border_width(s_view_tabs, 0, 0);
+    lv_obj_set_style_pad_all(s_view_tabs, 0, 0);
+    lv_obj_set_style_pad_gap(s_view_tabs, UISX(4), 0);
+    lv_obj_set_style_bg_color(s_view_tabs, COL_PANEL, LV_PART_ITEMS);
+    lv_obj_set_style_bg_color(s_view_tabs, COL_ACCENT, LV_PART_ITEMS | LV_STATE_CHECKED);
+    lv_obj_set_style_text_color(s_view_tabs, COL_TEXT, LV_PART_ITEMS);
+    lv_obj_set_style_text_color(s_view_tabs, COL_BG, LV_PART_ITEMS | LV_STATE_CHECKED);
+    lv_obj_set_style_text_font(s_view_tabs, UIFONT(&lv_font_montserrat_12, &lv_font_montserrat_8), LV_PART_ITEMS);
+    lv_obj_set_style_radius(s_view_tabs, UISY(7), LV_PART_ITEMS);
+    lv_obj_set_style_shadow_width(s_view_tabs, 0, LV_PART_ITEMS);
+    lv_obj_add_event_cb(s_view_tabs, view_tab_cb, LV_EVENT_VALUE_CHANGED, NULL);
 
     static const char *lm_map[4];
     lm_map[0] = L()->lm_planes;
@@ -926,7 +976,7 @@ static void build_list(lv_obj_t *scr)
         lv_obj_add_flag(row, LV_OBJ_FLAG_CLICKABLE);
         lv_obj_add_event_cb(row, row_click_cb, LV_EVENT_CLICKED, (void *)(intptr_t)i);
 
-        lv_obj_t *cs = make_label(row, UIFONT(&lv_font_montserrat_20, &lv_font_montserrat_12), COL_TEXT);
+        lv_obj_t *cs = make_label(row, UIFONT(&ui_plex_20, &lv_font_montserrat_12), COL_TEXT);
         lv_obj_align(cs, LV_ALIGN_TOP_LEFT, UISX(48), -2);
         lv_obj_t *type = make_label(row, UIFONT(&lv_font_montserrat_14, &lv_font_montserrat_8), COL_ACCENT);
         lv_obj_align(type, LV_ALIGN_TOP_RIGHT, 0, 0);
@@ -946,6 +996,7 @@ static void build_list(lv_obj_t *scr)
 
         lv_obj_add_flag(row, LV_OBJ_FLAG_HIDDEN);
         s_list_rows[i] = row;
+        lv_obj_add_flag(row, LV_OBJ_FLAG_HIDDEN);
     }
 }
 
@@ -1591,6 +1642,17 @@ static void build_radar_panel(lv_obj_t *scr)
     lv_obj_set_pos(s_radar_img, 0, 0);
     lv_obj_add_flag(s_radar_img, LV_OBJ_FLAG_HIDDEN);
 
+    lv_obj_t *north = make_label(s_radar_panel, UIFONT(&ui_inter_18, &font_pl_12), COL_ACCENT);
+    lv_label_set_text(north, "N");
+    lv_obj_align(north, LV_ALIGN_TOP_MID, 0, UISY(3));
+    s_radar_empty = make_label(s_radar_panel, UIFONT(&font_pl_20, &font_pl_12), COL_DIM);
+    lv_label_set_text(s_radar_empty, "NO AIRCRAFT DATA");
+    lv_obj_set_style_bg_color(s_radar_empty, COL_BG, 0);
+    lv_obj_set_style_bg_opa(s_radar_empty, LV_OPA_COVER, 0);
+    lv_obj_set_style_pad_all(s_radar_empty, UISY(8), 0);
+    lv_obj_set_style_radius(s_radar_empty, UISY(8), 0);
+    lv_obj_align(s_radar_empty, LV_ALIGN_TOP_MID, 0, UISY(80));
+
     for (int i = 1; i <= 3; i++) {
         int r = RADAR_R * i / 3;
         lv_obj_t *ring = lv_obj_create(s_radar_panel);
@@ -1616,7 +1678,7 @@ static void build_radar_panel(lv_obj_t *scr)
     for (int i = 0; i < MAX_AIRCRAFT; i++) {
         s_radar_dots[i] = plane_img(s_radar_panel);
         lv_obj_add_flag(s_radar_dots[i], LV_OBJ_FLAG_CLICKABLE);
-        lv_obj_set_ext_click_area(s_radar_dots[i], 8);
+        lv_obj_set_ext_click_area(s_radar_dots[i], UISX(12));
         lv_obj_add_event_cb(s_radar_dots[i], radar_dot_cb, LV_EVENT_CLICKED,
                             (void *)(intptr_t)i);
     }
@@ -3538,7 +3600,8 @@ static void build_detail(lv_obj_t *scr)
     s_detail_panel = panel;
 
     s_detail_empty = make_label(panel, UIFONT(&font_pl_20, &font_pl_12), COL_DIM);
-    lv_label_set_text(s_detail_empty, L()->waiting_aircraft);
+    lv_label_set_text(s_detail_empty, "NO AIRCRAFT DATA\nWaiting for live ADS-B");
+    lv_obj_set_style_text_align(s_detail_empty, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_center(s_detail_empty);
 
     s_detail_content = lv_obj_create(panel);
@@ -3566,6 +3629,10 @@ static void build_detail(lv_obj_t *scr)
     s_f_name = UIFONT(&font_pl_16, &font_pl_10);
     s_f_small = UIFONT(&font_pl_14, &font_pl_8);
 #endif
+    if (!s_big) {
+        s_f_code = UIFONT(&ui_plex_26, &lv_font_montserrat_20);
+        s_f_val = UIFONT(&ui_plex_20, &lv_font_montserrat_12);
+    }
     s_city_y = (s_big ? UISY(176) : UISY(152)) + DTL_Y1;
     s_dcity_w = s_big ? UISX(260) : UISX(200);
     int logo_d = s_big ? UISY(128) : UISY(90);
@@ -3676,6 +3743,11 @@ static void build_detail(lv_obj_t *scr)
     s_extra_label = make_label(s_detail_content, s_f_small, COL_DIM);
     lv_obj_set_pos(s_extra_label, 0, UISY(378) + DTL_VEXT);
     lv_obj_set_width(s_extra_label, DTL_W);
+
+    s_position_label = make_label(s_detail_content, UIFONT(&font_pl_14, &font_pl_8), COL_DIM);
+    lv_obj_set_pos(s_position_label, 0, UISY(396) + DTL_VEXT);
+    lv_obj_set_width(s_position_label, DTL_W);
+    lv_label_set_long_mode(s_position_label, LV_LABEL_LONG_DOT);
     lv_label_set_long_mode(s_extra_label, LV_LABEL_LONG_SCROLL_CIRCULAR);
     lv_obj_set_style_anim_speed(s_extra_label, 12, 0);
 
@@ -3685,6 +3757,8 @@ static void build_detail(lv_obj_t *scr)
     make_stat(grid, 0, 1, L()->st_dist, &s_stat_vals[3]);
     make_stat(grid, 1, 1, L()->st_track, &s_stat_vals[4]);
     lv_obj_t *regbox = make_stat(grid, 2, 1, L()->st_reg, &s_stat_vals[5]);
+    lv_obj_set_style_text_font(s_stat_vals[5], UIFONT(&font_pl_16, &font_pl_10), 0);
+    lv_label_set_long_mode(s_stat_vals[5], LV_LABEL_LONG_DOT);
     s_reg_flag = lv_img_create(regbox);
     lv_obj_align(s_reg_flag, LV_ALIGN_TOP_RIGHT, 0, -2);
     lv_obj_add_flag(s_reg_flag, LV_OBJ_FLAG_HIDDEN);
@@ -3763,6 +3837,13 @@ void ui_init(void)
     lv_timer_create(clock_timer_cb, 5000, NULL);
     lv_timer_create(logo_tick_cb, 500, NULL);
     lv_timer_create(idle_timer_cb, 10000, NULL);
+
+    s_list_empty = make_label(s_list_panel, UIFONT(&font_pl_16, &font_pl_10), COL_DIM);
+    lv_obj_set_size(s_list_empty, LIST_W - UISX(24), UISY(140));
+    lv_obj_set_style_text_align(s_list_empty, LV_TEXT_ALIGN_CENTER, 0);
+    lv_label_set_text(s_list_empty, "NO AIRCRAFT DATA\n\nLive ADS-B targets appear here.\nCheck Wi-Fi, range and source.");
+    lv_obj_move_foreground(s_radar_empty);
+    apply_view(VIEW_RADAR);
 }
 
 static bool s_update_avail;
@@ -3870,7 +3951,7 @@ void ui_set_status_alert(bool alert)
 void ui_set_status(const char *text)
 {
     if (s_status_label != NULL) {
-        lv_label_set_text(s_status_label, text);
+        label_set_if_changed(s_status_label, text);
     }
 }
 
@@ -4197,6 +4278,13 @@ static void render_detail(void)
                        el ? "  \xC2\xB7  " : "", ap);
     }
     lv_label_set_text(s_extra_label, extra);
+
+    if (ac->has_pos) {
+        snprintf(buf, sizeof(buf), "LAT %.4f  LON %.4f  / ADS-B", ac->lat, ac->lon);
+    } else {
+        strlcpy(buf, "POSITION UNAVAILABLE", sizeof(buf));
+    }
+    label_set_if_changed(s_position_label, buf);
 
     const char *cc = reg_country(ac->reg);
     const lv_img_dsc_t *rfl = ac->reg[0] && cc != NULL ? flags_get(cc) : NULL;

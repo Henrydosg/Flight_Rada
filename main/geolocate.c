@@ -6,6 +6,7 @@
 #include "esp_log.h"
 #include "http_util.h"
 #include "settings.h"
+#include "observer_config.h"
 
 static const char *TAG = "geoloc";
 
@@ -17,8 +18,9 @@ esp_err_t geolocate_get(double *lat, double *lon, char *city, size_t city_len)
 
     const settings_t *cfg = settings_get();
     if (cfg->use_fixed_loc) {
-        *lat = cfg->lat;
-        *lon = cfg->lon;
+        bool valid = observer_location_valid(cfg->lat, cfg->lon);
+        *lat = valid ? cfg->lat : OBSERVER_DEFAULT_LAT;
+        *lon = valid ? cfg->lon : OBSERVER_DEFAULT_LON;
         ESP_LOGI(TAG, "using fixed location %.4f, %.4f", *lat, *lon);
         return ESP_OK;
     }
@@ -49,6 +51,10 @@ esp_err_t geolocate_get(double *lat, double *lon, char *city, size_t city_len)
     }
     *lat = jlat->valuedouble;
     *lon = jlon->valuedouble;
+    if (!observer_location_valid(*lat, *lon)) {
+        cJSON_Delete(root);
+        return ESP_ERR_INVALID_RESPONSE;
+    }
     if (city != NULL && cJSON_IsString(jcity)) {
         strlcpy(city, jcity->valuestring, city_len);
     }

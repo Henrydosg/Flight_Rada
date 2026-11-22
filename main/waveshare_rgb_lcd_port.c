@@ -14,6 +14,7 @@
 #include "waveshare_rgb_lcd_port.h"
 #include "driver/ledc.h"
 #include "esp_check.h"
+#include "waveshare7_verified.h"
 #if CONFIG_CANFLIGHT_BOARD_SUNTON_4827S043R
 #include "driver/spi_master.h"
 #include "esp_lcd_touch_xpt2046.h"
@@ -54,8 +55,14 @@ __attribute__((unused)) static const board_cfg_t k_waveshare = {
     .has_ch422g = true,
     .bl_gpio = -1,
     .tp_rst_gpio = -1,
+#if CONFIG_CANFLIGHT_WAVESHARE7_KNOWN_GOOD
+    .hs_pulse = W7_HSYNC_PULSE, .hs_bp = W7_HSYNC_BACK_PORCH, .hs_fp = W7_HSYNC_FRONT_PORCH,
+    .vs_pulse = W7_VSYNC_PULSE, .vs_bp = W7_VSYNC_BACK_PORCH, .vs_fp = W7_VSYNC_FRONT_PORCH,
+    .pclk_hz = W7_PCLK_HZ,
+#else
     .hs_pulse = 4, .hs_bp = 8, .hs_fp = 8,
     .vs_pulse = 4, .vs_bp = 8, .vs_fp = 8,
+#endif
     .tp_mirror = false,
 };
 
@@ -308,6 +315,14 @@ void *waveshare_lcd_get_fb(void)
     if (s_panel == NULL) {
         return NULL;
     }
+#if CONFIG_CANFLIGHT_WAVESHARE7_KNOWN_GOOD
+    _Static_assert(LVGL_PORT_LCD_RGB_BUFFER_NUMS == 3, "Rotated profile requires three RGB buffers");
+    void *front = NULL, *back = NULL, *logical = NULL;
+    if (esp_lcd_rgb_panel_get_frame_buffer(s_panel, 3, &front, &back, &logical) != ESP_OK) return NULL;
+    /* Rotation uses fb0/fb1 for scanout and fb2 for LVGL. The web screenshot
+     * must read the logical buffer, matching touch/UI coordinates. */
+    return logical;
+#else
     void *fb0 = NULL, *fb1 = NULL;
     /* single-framebuffer builds (7B) have no second buffer to ask for */
     if (esp_lcd_rgb_panel_get_frame_buffer(s_panel, 1, &fb0) != ESP_OK &&
@@ -315,6 +330,7 @@ void *waveshare_lcd_get_fb(void)
         return NULL;
     }
     return fb0;
+#endif
 }
 
 IRAM_ATTR static bool rgb_lcd_on_vsync_event(esp_lcd_panel_handle_t panel,
@@ -394,9 +410,15 @@ static void board_detect(void)
 {
 #if CONFIG_CANFLIGHT_BOARD_WAVESHARE_7
     s_board = &k_waveshare;
+#if CONFIG_CANFLIGHT_WAVESHARE7_KNOWN_GOOD
+    ESP_ERROR_CHECK(i2c_master_init(s_board->i2c_sda, s_board->i2c_scl));
+    ESP_ERROR_CHECK(ch422g_write(W7_CH_MODE_ADDR, W7_CH_OUTPUT_MODE));
+    ESP_ERROR_CHECK(ch422g_write(W7_CH_OUTPUT_ADDR, w7_output_mask(0, 1)));
+#else
     i2c_master_init(s_board->i2c_sda, s_board->i2c_scl);
     ch422g_write(0x24, 0x01);
     ch422g_write(0x38, 0x2A);           /* backlight off until the first frame */
+#endif
 #elif CONFIG_CANFLIGHT_BOARD_GUITION_JC8048W550
     s_board = &k_guition;
     i2c_master_init(s_board->i2c_sda, s_board->i2c_scl);
@@ -473,6 +495,16 @@ static void touch_reset(void)
         ch32v003_output(1, 1);              /* TP_RST high */
         esp_rom_delay_us(200 * 1000);
     } else if (s_board->has_ch422g) {
+#if CONFIG_CANFLIGHT_WAVESHARE7_KNOWN_GOOD
+        /* Preserve Project A's 0x40 -> 0x42 reset sequence. Do not drive
+         * EXIO3/EXIO5 using the generic upstream board masks. */
+        ESP_ERROR_CHECK(ch422g_write(W7_CH_MODE_ADDR, W7_CH_OUTPUT_MODE));
+        ESP_ERROR_CHECK(ch422g_write(W7_CH_OUTPUT_ADDR, w7_output_mask(0, 0)));
+        vTaskDelay(pdMS_TO_TICKS(10));
+        ESP_ERROR_CHECK(ch422g_write(W7_CH_OUTPUT_ADDR, w7_output_mask(0, 1)));
+        vTaskDelay(pdMS_TO_TICKS(50));
+        ESP_ERROR_CHECK(gpio_set_direction(GPIO_TOUCH_INT, GPIO_MODE_INPUT));
+#else
         gpio_config_t io_conf = {
             .intr_type = GPIO_INTR_DISABLE,
             .pin_bit_mask = 1ULL << GPIO_TOUCH_INT,
@@ -491,6 +523,7 @@ static void touch_reset(void)
         esp_rom_delay_us(100 * 1000);
         ch422g_write(0x38, 0x2A);           /* TP_RST high, backlight off */
         esp_rom_delay_us(200 * 1000);
+#endif
     } else {
         if (s_board->tp_rst_gpio < 0) {
             /* CrowPanel family: GT911 reset is not ours to pulse; the
@@ -529,7 +562,14 @@ esp_err_t waveshare_esp32_s3_rgb_lcd_init(void)
         esp_rom_delay_us(120 * 1000);
     }
 
-    ESP_LOGI(TAG, "Install RGB LCD panel driver");
+    ESP_LOGI(TAG, "RGB %dx%d pclk=%d H(pulse/bp/fp)=%d/%d/%d V=%d/%d/%d; %d PSRAM framebuffers (%u bytes), bounce=%d px",
+             EXAMPLE_LCD_H_RES, EXAMPLE_LCD_V_RES,
+             s_board->pclk_hz ? s_board->pclk_hz : EXAMPLE_LCD_PIXEL_CLOCK_HZ,
+             s_board->hs_pulse, s_board->hs_bp, s_board->hs_fp,
+             s_board->vs_pulse, s_board->vs_bp, s_board->vs_fp,
+             LVGL_PORT_LCD_RGB_BUFFER_NUMS,
+             (unsigned)(LVGL_PORT_LCD_RGB_BUFFER_NUMS * EXAMPLE_LCD_H_RES * EXAMPLE_LCD_V_RES * 2),
+             EXAMPLE_RGB_BOUNCE_BUFFER_SIZE);
     esp_lcd_panel_handle_t panel_handle = NULL;
     esp_lcd_rgb_panel_config_t panel_config = {
         .clk_src = LCD_CLK_SRC_DEFAULT,
@@ -606,8 +646,15 @@ esp_err_t waveshare_esp32_s3_rgb_lcd_init(void)
     tp_io_config.scl_speed_hz = 0;
 
     esp_lcd_touch_config_t tp_cfg = {
+#if CONFIG_CANFLIGHT_WAVESHARE7_KNOWN_GOOD
+        /* Touch v1.2.1 mirrors as x_max-x, not x_max-1-x. Match A's
+         * inclusive coordinate maxima so 180-degree input stays in bounds. */
+        .x_max = EXAMPLE_LCD_H_RES - 1,
+        .y_max = EXAMPLE_LCD_V_RES - 1,
+#else
         .x_max = EXAMPLE_LCD_H_RES,
         .y_max = EXAMPLE_LCD_V_RES,
+#endif
         .rst_gpio_num = -1,
         .int_gpio_num = -1,
         .levels = {
@@ -643,6 +690,10 @@ esp_err_t waveshare_esp32_s3_rgb_lcd_init(void)
     if (terr != ESP_OK) {
         ESP_LOGE(TAG, "GT911 init failed - running without touch");
         tp_handle = NULL;
+    } else {
+        ESP_LOGI(TAG, "GT911 ready at 0x%02x, coordinates 0..%u / 0..%u, UI rotation=%d",
+                 (unsigned)tp_io_config.dev_addr, (unsigned)tp_cfg.x_max,
+                 (unsigned)tp_cfg.y_max, CONFIG_EXAMPLE_LVGL_PORT_ROTATION_DEGREE);
     }
 #endif /* touch variant */
 
@@ -684,8 +735,12 @@ esp_err_t waveshare_rgb_lcd_bl_on(void)
     if (!s_board->has_ch422g) {
         return bl_gpio_set(1);
     }
+#if CONFIG_CANFLIGHT_WAVESHARE7_KNOWN_GOOD
+    return ch422g_write(W7_CH_OUTPUT_ADDR, w7_output_mask(1, 1));
+#else
     ch422g_write(0x24, 0x01);
     return ch422g_write(0x38, 0x1E);
+#endif
 }
 
 bool waveshare_rgb_lcd_bl_dimmable(void)
@@ -754,6 +809,10 @@ esp_err_t waveshare_rgb_lcd_bl_off(void)
     if (!s_board->has_ch422g) {
         return bl_gpio_set(0);
     }
+#if CONFIG_CANFLIGHT_WAVESHARE7_KNOWN_GOOD
+    return ch422g_write(W7_CH_OUTPUT_ADDR, w7_output_mask(0, 1));
+#else
     ch422g_write(0x24, 0x01);
     return ch422g_write(0x38, 0x1A);
+#endif
 }

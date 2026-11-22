@@ -29,7 +29,6 @@ static const char *TAG = "logos";
 
 static char s_miss[LOGO_MISS_MAX][4];
 static int  s_miss_n;
-static char s_fetching[4];
 static volatile bool s_fetch_busy;
 
 /* Index of logos available in the online repo (bundled as
@@ -104,7 +103,7 @@ esp_err_t logos_init(void)
          * pool; at 4 a busy tile render starved logo opens and they were
          * then blacklisted as absent (#35) */
         .max_files = 10,
-        .format_if_mount_failed = true,
+        .format_if_mount_failed = false, /* preserve data; report missing/corrupt assets */
     };
     esp_err_t err = esp_vfs_spiffs_register(&conf);
     if (err != ESP_OK) {

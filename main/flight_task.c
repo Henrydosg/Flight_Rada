@@ -49,6 +49,8 @@
 #include "esp_app_desc.h"
 
 static const char *TAG = "flight_task";
+static bool s_data_valid;
+static int64_t s_last_success_ms = -1;
 
 /* New adsbdb lookups per poll cycle - keep the free service happy. */
 #define MAX_ROUTE_LOOKUPS_PER_CYCLE 8
@@ -352,6 +354,9 @@ static void publish_web_state(const aircraft_list_t *list, const weather_t *wx,
         return;   /* nobody is looking at /api/state right now */
     }
     cJSON *root = cJSON_CreateObject();
+    cJSON_AddBoolToObject(root, "data_valid", s_data_valid);
+    cJSON_AddNumberToObject(root, "data_age_ms", s_last_success_ms < 0 ? -1 :
+                           esp_timer_get_time() / 1000 - s_last_success_ms);
     cJSON_AddStringToObject(root, "city", city);
     cJSON_AddNumberToObject(root, "lat", lat);
     cJSON_AddNumberToObject(root, "lon", lon);
@@ -735,6 +740,8 @@ static void flight_task(void *arg)
             ui_prewarm_ambient();   /* cache the screensaver map while PSRAM is fresh */
         }
         if (err == ESP_OK) {
+            s_data_valid = true;
+            s_last_success_ms = esp_timer_get_time() / 1000;
             consecutive_failures = 0;
 
             const settings_t *cfg = settings_get();
@@ -912,9 +919,16 @@ static void flight_task(void *arg)
                 snprintf(status, sizeof(status), L()->track_wait_fmt,
                          settings_get()->track_id, list->count);
             } else {
-                snprintf(status, sizeof(status), L()->status_fmt,
-                         city[0] ? city : "home", list->count,
-                         (int)(radius_nm * 1.852));
+                if (settings_get()->lang == 0) {
+                    bool metric = settings_get()->metric_units;
+                    snprintf(status, sizeof(status), "%d AC / %d %s / %.24s",
+                             list->count, metric ? (int)(radius_nm * 1.852) : radius_nm,
+                             metric ? "KM" : "NM", city[0] ? city : "home");
+                } else {
+                    snprintf(status, sizeof(status), L()->status_fmt,
+                             city[0] ? city : "home", list->count,
+                             (int)(radius_nm * 1.852));
+                }
             }
             if (lvgl_port_lock(2000)) {
                 ui_set_status_alert(emergency != NULL);
@@ -951,12 +965,26 @@ static void flight_task(void *arg)
             }
             mqtt_pub_state(mq);
         } else {
+            s_data_valid = false;
             consecutive_failures++;
             ESP_LOGW(TAG, "fetch failed (%s), %d in a row",
                      esp_err_to_name(err), consecutive_failures);
             if (consecutive_failures >= 3) {
-                set_status(L()->no_data);
+                /* Expired targets must not keep moving or look live after
+                 * repeated failures. Keep the stats/history, clear only the
+                 * current target snapshot and expose validity to API users. */
+                list->count = 0;
+                list->fetched_at_ms = 0;
+                if (lvgl_port_lock(2000)) {
+                    ui_set_status_alert(false);
+                    ui_update(list);
+                    ui_set_status("NO AIRCRAFT DATA");
+                    lvgl_port_unlock();
+                }
+            } else {
+                set_status("DATA STALE / retrying");
             }
+            publish_web_state(list, &wx, lat, lon, city, radius_nm);
         }
 
         /* Housekeeping after the aircraft are on screen (still gated by

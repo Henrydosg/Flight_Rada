@@ -8,6 +8,11 @@ extern const lv_font_t font_pl_14;
 extern const lv_font_t font_pl_16;
 extern const lv_font_t font_pl_20;
 
+/* Small OFL subsets for the local aviation dashboard. */
+extern const lv_font_t ui_inter_18;
+extern const lv_font_t ui_plex_20;
+extern const lv_font_t ui_plex_26;
+
 /* Downscaled tiers for the 480x272 build (Sunton 4827S043); host builds
  * carry them too so --size tests work. Guarded out of other firmware. */
 extern const lv_font_t font_pl_8;

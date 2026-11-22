@@ -18,6 +18,7 @@
 #include "lang.h"
 #include "lvgl_port.h"
 #include "settings.h"
+#include "observer_config.h"
 #ifndef APKFLIGHT
 #include "waveshare_rgb_lcd_port.h"
 #endif
@@ -93,9 +94,16 @@ static void kb_event_cb(lv_event_t *e)
 static void ta_focus_cb(lv_event_t *e)
 {
     lv_obj_t *ta = lv_event_get_target(e);
-    bool numeric = (ta == s_ta_lat || ta == s_ta_lon || ta == s_ta_amb_idle ||
+    if (s_kb == NULL || (lv_keyboard_get_textarea(s_kb) == ta &&
+                         !lv_obj_has_flag(s_kb, LV_OBJ_FLAG_HIDDEN))) {
+        return;
+    }
+    bool coordinate = ta == s_ta_lat || ta == s_ta_lon;
+    bool numeric = (coordinate || ta == s_ta_amb_idle ||
                     ta == s_ta_night_from || ta == s_ta_night_to ||
                     ta == s_ta_amb_from || ta == s_ta_amb_to);
+    /* Keep City and both coordinate fields above the bottom keyboard. */
+    lv_obj_set_height(s_kb, UISY(coordinate || ta == s_ta_city ? 156 : 210));
     lv_keyboard_set_mode(s_kb, numeric ? LV_KEYBOARD_MODE_NUMBER : LV_KEYBOARD_MODE_TEXT_LOWER);
     lv_keyboard_set_textarea(s_kb, ta);
     lv_obj_clear_flag(s_kb, LV_OBJ_FLAG_HIDDEN);
@@ -223,22 +231,15 @@ static void city_pick_cb(lv_event_t *e)
     snprintf(coord, sizeof(coord), "%.4f", s_geo_results[sel].lon);
     lv_textarea_set_text(s_ta_lon, coord);
     lv_obj_clear_state(s_sw_auto, LV_STATE_CHECKED);
-    lv_obj_clear_state(s_ta_lat, LV_STATE_DISABLED);
-    lv_obj_clear_state(s_ta_lon, LV_STATE_DISABLED);
 }
 
 /* ---- misc ---- */
 
-static void auto_loc_cb(lv_event_t *e)
+static void coordinate_changed_cb(lv_event_t *e)
 {
-    bool automatic = lv_obj_has_state(s_sw_auto, LV_STATE_CHECKED);
-    if (automatic) {
-        lv_obj_add_state(s_ta_lat, LV_STATE_DISABLED);
-        lv_obj_add_state(s_ta_lon, LV_STATE_DISABLED);
-    } else {
-        lv_obj_clear_state(s_ta_lat, LV_STATE_DISABLED);
-        lv_obj_clear_state(s_ta_lon, LV_STATE_DISABLED);
-    }
+    /* Leave automatic location alone while viewing a field. A coordinate
+     * edit, like picking a city, explicitly selects manual location. */
+    lv_obj_clear_state(s_sw_auto, LV_STATE_CHECKED);
 }
 
 #ifndef APKFLIGHT
@@ -304,6 +305,14 @@ static int parse_hhmm(const char *txt, int fallback)
 static void save_cb(lv_event_t *e)
 {
     settings_t *cfg = settings_get();
+    bool fixed_loc = !lv_obj_has_state(s_sw_auto, LV_STATE_CHECKED);
+    double lat = cfg->lat, lon = cfg->lon;
+    if (fixed_loc &&
+        (!observer_parse_coordinate(lv_textarea_get_text(s_ta_lat), 90, &lat) ||
+         !observer_parse_coordinate(lv_textarea_get_text(s_ta_lon), 180, &lon))) {
+        ui_toast("Invalid latitude or longitude");
+        return;
+    }
 #ifndef APKFLIGHT_NO_WIFI
     strlcpy(cfg->wifi_ssid, lv_textarea_get_text(s_ta_ssid), sizeof(cfg->wifi_ssid));
     const char *pw = lv_textarea_get_text(s_ta_pass);
@@ -311,9 +320,9 @@ static void save_cb(lv_event_t *e)
         strlcpy(cfg->wifi_pass, pw, sizeof(cfg->wifi_pass));
     }
 #endif
-    cfg->use_fixed_loc = !lv_obj_has_state(s_sw_auto, LV_STATE_CHECKED);
-    cfg->lat = atof(lv_textarea_get_text(s_ta_lat));
-    cfg->lon = atof(lv_textarea_get_text(s_ta_lon));
+    cfg->use_fixed_loc = fixed_loc;
+    cfg->lat = lat;
+    cfg->lon = lon;
     cfg->radius_nm = lv_slider_get_value(s_slider_radius);
     strlcpy(cfg->track_id, lv_textarea_get_text(s_ta_track), sizeof(cfg->track_id));
     cfg->track_on = lv_obj_has_state(s_sw_track, LV_STATE_CHECKED) && cfg->track_id[0] != '\0';
@@ -626,9 +635,9 @@ void ui_settings_open(void)
     /* --- Location --- */
     p = tab_page(tv, L()->tab_place);
     s_sw_auto = add_switch(p, L()->auto_location, 0, 0, !cfg->use_fixed_loc);
-    lv_obj_add_event_cb(s_sw_auto, auto_loc_cb, LV_EVENT_VALUE_CHANGED, NULL);
     add_label(p, L()->city_search, 0, 56);
     s_ta_city = add_textarea(p, 0, 80, 290, "", false);
+    lv_obj_add_event_cb(s_ta_city, ta_focus_cb, LV_EVENT_CLICKED, NULL);
     add_button(p, 300, 80, 56, 44, LV_SYMBOL_GPS, city_search_cb, COL_PANEL);
     s_dd_cities = add_dropdown(p, 366, 80, 380, city_pick_cb);
     lv_dropdown_set_text(s_dd_cities, L()->dd_results);
@@ -638,10 +647,12 @@ void ui_settings_open(void)
     add_label(p, L()->longitude, 220, 140);
     snprintf(buf, sizeof(buf), "%.4f", cfg->lon);
     s_ta_lon = add_textarea(p, 220, 164, 200, buf, false);
-    if (!cfg->use_fixed_loc) {
-        lv_obj_add_state(s_ta_lat, LV_STATE_DISABLED);
-        lv_obj_add_state(s_ta_lon, LV_STATE_DISABLED);
-    }
+    /* A field can stay focused after dismissing the keyboard. Allow a tap
+     * on that same field to reopen it without requiring a focus change. */
+    lv_obj_add_event_cb(s_ta_lat, ta_focus_cb, LV_EVENT_CLICKED, NULL);
+    lv_obj_add_event_cb(s_ta_lon, ta_focus_cb, LV_EVENT_CLICKED, NULL);
+    lv_obj_add_event_cb(s_ta_lat, coordinate_changed_cb, LV_EVENT_VALUE_CHANGED, NULL);
+    lv_obj_add_event_cb(s_ta_lon, coordinate_changed_cb, LV_EVENT_VALUE_CHANGED, NULL);
     add_label(p, L()->search_radius, 0, 226);
     s_slider_radius = lv_slider_create(p);
     lv_obj_set_size(s_slider_radius, UISX(420), UISY(16));

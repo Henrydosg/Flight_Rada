@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include "cJSON.h"
 #include "esp_heap_caps.h"
 #include "esp_http_client.h"
@@ -12,6 +13,7 @@
 #include "http_util.h"
 #include "geo_math.h"
 #include "settings.h"
+#include "observer_config.h"
 
 static const char *TAG = "flights";
 
@@ -134,6 +136,8 @@ static void parse_aircraft(const cJSON *jac, aircraft_t *ac)
         ac->has_pos = false;
     }
 
+    ac->has_pos = ac->has_pos && observer_location_valid(ac->lat, ac->lon);
+
     j = cJSON_GetObjectItem(jac, "alt_baro");
     if (j == NULL) {
         /* Old dump1090-mutability schema (FR24/PiAware feeder bundles):
@@ -186,9 +190,12 @@ static int cmp_by_dist(const void *a, const void *b)
     return (da > db) - (da < db);
 }
 
-static esp_err_t parse_point_response(const char *json, double lat, double lon,
-                                       aircraft_list_t *out)
+esp_err_t flight_parse_snapshot(const char *json, double lat, double lon,
+                                aircraft_list_t *out)
 {
+    if (json == NULL || out == NULL || !observer_location_valid(lat, lon)) {
+        return ESP_ERR_INVALID_ARG;
+    }
     cJSON *root = cJSON_Parse(json);
     if (root == NULL) {
         return ESP_ERR_INVALID_RESPONSE;
@@ -350,7 +357,7 @@ static esp_err_t fetch_internet(double lat, double lon, int radius_nm,
         err = http_get_keepalive(i, url, buf, FETCH_BUF_SIZE, NULL);
         park_if_refused(i, err, now_ms);
         if (err == ESP_OK) {
-            err = parse_point_response(buf, lat, lon, out);
+            err = flight_parse_snapshot(buf, lat, lon, out);
         }
         if (err == ESP_OK) {
             /* Union with every other aggregator: each network runs its
@@ -366,7 +373,7 @@ static esp_err_t fetch_internet(double lat, double lon, int radius_nm,
                     snprintf(url2, sizeof(url2), src_fmt[j], lat, lon, radius_nm);
                     esp_err_t jerr = http_get_keepalive(j, url2, buf, FETCH_BUF_SIZE, NULL);
                     park_if_refused(j, jerr, now_ms);
-                    if (jerr != ESP_OK || parse_point_response(buf, lat, lon, extra) != ESP_OK) {
+                    if (jerr != ESP_OK || flight_parse_snapshot(buf, lat, lon, extra) != ESP_OK) {
                         continue;
                     }
                     int added = union_into(out, extra);
@@ -427,7 +434,7 @@ static esp_err_t fetch_local(const char *local, double lat, double lon,
         }
     }
     if (lerr == ESP_OK) {
-        lerr = parse_point_response(buf, lat, lon, out);
+        lerr = flight_parse_snapshot(buf, lat, lon, out);
     }
     return lerr;
 }

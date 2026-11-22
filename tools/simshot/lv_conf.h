@@ -7,6 +7,15 @@
 #define LV_COLOR_DEPTH 16
 #define LV_COLOR_16_SWAP 0
 
+#ifdef _WIN32
+/* MinGW's CRT already declares _vsnprintf, also used internally by LVGL's
+ * tiny printf implementation. Use the host CRT only for headless rendering. */
+#define LV_SPRINTF_CUSTOM 1
+#define LV_SPRINTF_INCLUDE <stdio.h>
+#define lv_snprintf snprintf
+#define lv_vsnprintf vsnprintf
+#endif
+
 #define LV_MEM_CUSTOM 1
 #define LV_MEM_CUSTOM_INCLUDE <stdlib.h>
 #define LV_MEM_CUSTOM_ALLOC   malloc

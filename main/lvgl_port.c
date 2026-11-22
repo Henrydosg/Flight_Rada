@@ -15,12 +15,44 @@
 #include "esp_lcd_touch.h"
 #include "esp_timer.h"
 #include "esp_log.h"
+#include "esp_heap_caps.h"
+#include "esp_attr.h"
 #include "lvgl.h"
 #include "lvgl_port.h"
 
 static const char *TAG = "lv_port";                      // Tag for logging
 static SemaphoreHandle_t lvgl_mux;                       // LVGL mutex for synchronization
 static TaskHandle_t lvgl_task_handle = NULL;             // Handle for the LVGL task
+
+static uint32_t s_frames, s_render_ms, s_dirty_pixels, s_vsync_timeouts;
+
+static void wait_for_rgb_frame(void)
+{
+    /* A missing panel interrupt must not freeze the UI forever. */
+    if (ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(250)) == 0) s_vsync_timeouts++;
+}
+
+static void render_monitor(lv_disp_drv_t *drv, uint32_t ms, uint32_t pixels)
+{
+    (void)drv;
+    s_frames++;
+    s_render_ms += ms;
+    s_dirty_pixels += pixels;
+}
+
+static void port_diagnostics(lv_timer_t *timer)
+{
+    (void)timer;
+    ESP_LOGI(TAG, "[lcd-perf] frames=%lu dirty_px=%lu render_ms=%lu vsync_timeouts=%lu; PSRAM free/largest=%u/%u; DMA free/largest=%u/%u; LVGL stack_min=%u",
+             (unsigned long)s_frames, (unsigned long)s_dirty_pixels,
+             (unsigned long)s_render_ms, (unsigned long)s_vsync_timeouts,
+             (unsigned)heap_caps_get_free_size(MALLOC_CAP_SPIRAM),
+             (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM),
+             (unsigned)heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_DMA),
+             (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_DMA),
+             (unsigned)uxTaskGetStackHighWaterMark(NULL));
+    s_frames = s_render_ms = s_dirty_pixels = s_vsync_timeouts = 0;
+}
 
 #if EXAMPLE_LVGL_PORT_ROTATION_DEGREE != 0
 // Function to get the next frame buffer for double buffering
@@ -222,7 +254,7 @@ static void flush_callback(lv_disp_drv_t *drv, const lv_area_t *area, lv_color_t
 
             /* Wait for the current frame buffer to complete transmission */
             ulTaskNotifyValueClear(NULL, ULONG_MAX);
-            ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+            wait_for_rgb_frame();
 
             /* Synchronously update the dirty area for another frame buffer */
             flush_dirty_copy(flush_get_next_buf(panel_handle), color_map, &dirty_area);
@@ -253,7 +285,7 @@ static void flush_callback(lv_disp_drv_t *drv, const lv_area_t *area, lv_color_t
 
                 /* Wait for the current frame buffer to complete transmission */
                 ulTaskNotifyValueClear(NULL, ULONG_MAX);
-                ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+                wait_for_rgb_frame();
 
                 if (probe_result == FLUSH_PROBE_PART_COPY) {
                     /* Synchronously update the dirty area for another frame buffer */
@@ -285,7 +317,7 @@ static void flush_callback(lv_disp_drv_t *drv, const lv_area_t *area, lv_color_t
 
         /* Wait for the last frame buffer to complete transmission */
         ulTaskNotifyValueClear(NULL, ULONG_MAX);
-        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+        wait_for_rgb_frame();
     }
 
     lv_disp_flush_ready(drv); // Mark the display flush as complete
@@ -307,7 +339,7 @@ static void flush_callback(lv_disp_drv_t *drv, const lv_area_t *area, lv_color_t
 
     /* Wait for the last frame buffer to complete transmission */
     ulTaskNotifyValueClear(NULL, ULONG_MAX);
-    ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+    wait_for_rgb_frame();
 
     lv_disp_flush_ready(drv); // Mark the display flush as complete
 }
@@ -416,6 +448,7 @@ static lv_disp_t *display_init(esp_lcd_panel_handle_t panel_handle)
 
     ESP_LOGD(TAG, "Register display driver to LVGL");
     lv_disp_drv_init(&disp_drv); // Initialize the display driver
+    disp_drv.monitor_cb = render_monitor;
 #if CONFIG_CANFLIGHT_BOARD_ELECROW_P4_10
     /* native landscape panel: no software rotation */
     disp_drv.hor_res = LVGL_PORT_H_RES;
@@ -454,15 +487,16 @@ static void touchpad_read(lv_indev_drv_t *indev_drv, lv_indev_data_t *data)
     esp_lcd_touch_handle_t tp = (esp_lcd_touch_handle_t)indev_drv->user_data; // Get touchpad handle from user data
     assert(tp); // Ensure touchpad handle is valid
 
-    uint16_t touchpad_x; // Variable for X coordinate
-    uint16_t touchpad_y; // Variable for Y coordinate
     uint8_t touchpad_cnt = 0; // Variable for touch count
+    esp_lcd_touch_point_data_t point = {0};
 
     /* Read data from touch controller into memory */
-    esp_lcd_touch_read_data(tp); // Read data from touch controller
+    esp_err_t touch_err = esp_lcd_touch_read_data(tp);
 
     /* Read data from touch controller */
-    bool touchpad_pressed = esp_lcd_touch_get_coordinates(tp, &touchpad_x, &touchpad_y, NULL, &touchpad_cnt, 1); // Get touch coordinates
+    bool touchpad_pressed = touch_err == ESP_OK &&
+        esp_lcd_touch_get_data(tp, &point, &touchpad_cnt, 1) == ESP_OK;
+    uint16_t touchpad_x = point.x, touchpad_y = point.y;
     if (touchpad_pressed && touchpad_cnt > 0) {
         data->point.x = touchpad_x; // Set the X coordinate
         data->point.y = touchpad_y; // Set the Y coordinate
@@ -546,6 +580,7 @@ esp_err_t lvgl_port_init(esp_lcd_panel_handle_t lcd_handle, esp_lcd_touch_handle
 
     lv_disp_t *disp = display_init(lcd_handle); // Initialize the display
     assert(disp); // Ensure the display initialization was successful
+    lv_timer_create(port_diagnostics, 30000, NULL);
 
     if (tp_handle) {
         lv_indev_t *indev = indev_init(tp_handle); // Initialize the touchpad input device
@@ -593,7 +628,7 @@ void lvgl_port_unlock(void)
     xSemaphoreGiveRecursive(lvgl_mux); // Release the mutex
 }
 
-bool lvgl_port_notify_rgb_vsync(void)
+bool IRAM_ATTR lvgl_port_notify_rgb_vsync(void)
 {
     BaseType_t need_yield = pdFALSE; // Flag to check if a yield is needed
 #if LVGL_PORT_FULL_REFRESH && (LVGL_PORT_LCD_RGB_BUFFER_NUMS == 3) && (EXAMPLE_LVGL_PORT_ROTATION_DEGREE == 0)
@@ -603,7 +638,7 @@ bool lvgl_port_notify_rgb_vsync(void)
     }
 #elif LVGL_PORT_AVOID_TEAR_ENABLE
     // Notify that the current RGB frame buffer has been transmitted
-    xTaskNotifyFromISR(lvgl_task_handle, ULONG_MAX, eNoAction, &need_yield); // Notify the LVGL task
+    vTaskNotifyGiveFromISR(lvgl_task_handle, &need_yield);
 #endif
     return (need_yield == pdTRUE); // Return whether a yield is needed
 }
